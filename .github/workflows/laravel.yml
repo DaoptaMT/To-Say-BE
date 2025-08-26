@@ -1,0 +1,85 @@
+name: Laravel CI/CD
+
+on:
+  push:
+    branches: [ "develop" ]
+  pull_request:
+    branches: [ "develop" ]
+
+jobs:
+  laravel-pipeline:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mariadb:10.9
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: be_app
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      # 1. Checkout source code
+      - name: 🛒 Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Setup PHP environment
+      - name: ⚙️ Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl, pdo, pdo_mysql, gd, bcmath
+          coverage: none
+
+      # 3. Install Composer dependencies
+      - name: 📦 Install Dependencies
+        run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+      # 4. Setup environment file (.env)
+      - name: 📝 Setup Environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
+          sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+          sed -i 's/DB_PORT=.*/DB_PORT=3306/' .env
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=be_app/' .env
+          sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
+          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=root/' .env
+
+      # 5. Directory permissions
+      - name: 🔑 Set Directory Permissions
+        run: chmod -R 777 storage bootstrap/cache
+
+      # 6. Run database migrations
+      - name: 🗄️ Run Migrations
+        run: php artisan migrate --force
+
+      # 7. Run tests
+      - name: 🧪 Run Tests
+        run: php artisan test
+
+      # 8. (Optional) Build frontend if you have Vite/React/JS
+      # - name: 🎨 Build Frontend
+      #   run: npm install && npm run build
+
+      # 9. (Optional) Deploy
+      # - name: 🚀 Deploy to Server
+      #   uses: appleboy/ssh-action@master
+      #   with:
+      #     host: ${{ secrets.SERVER_IP }}
+      #     username: ${{ secrets.SERVER_USER }}
+      #     key: ${{ secrets.SERVER_SSH_KEY }}
+      #     script: |
+      #       cd /var/www/your_app
+      #       git pull origin main
+      #       composer install --no-dev --optimize-autoloader
+      #       php artisan migrate --force
+      #       php artisan config:cache
+      #       php artisan route:cache
