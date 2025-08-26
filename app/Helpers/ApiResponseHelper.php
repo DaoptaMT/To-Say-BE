@@ -28,7 +28,7 @@ class ApiResponseHelper
      * Generate an error API response.
      *
      * @param string $message
-     * @param int $code
+     * @param int $status
      * @return JsonResponse
      */
     public static function error($message = 'An error occurred', int $status = 400): JsonResponse
