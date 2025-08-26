@@ -247,4 +247,8 @@ class UserController extends Controller
         // TODO: Tích hợp Twilio, Nexmo, Viettel SMS...
         Log::info("Send SMS to {$phone}: {$message}");
     }
+
+    public function test CICD() {
+        Log::inforrr("Test CICD");
+    }
 }
